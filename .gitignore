@@ -1,3 +1,7 @@
+# Custom project ignores
+defaultDB
+testDB
+
 # Logs
 logs
 *.log
