@@ -12,7 +12,7 @@
     },
     "scripts": {
         "test": "rimraf testDB && jest --verbose",
-        "build": "webpack --config webpack.config.cjs",
+        "build": "webpack",
         "lint": "eslint src/**/*.{js,ts} --format stylish",
         "lint:fix": "eslint src/**/*.{js,ts} --format stylish --fix",
         "clean": "rimraf dist defaultDB testDB",
