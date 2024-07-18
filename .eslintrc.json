@@ -1,0 +1,34 @@
+{
+    "rules": {
+        "quotes": [
+            "warn", "double",
+            {
+                "avoidEscape": true,
+                "allowTemplateLiterals": true
+            }
+        ],
+        "node/no-unsupported-features/es-syntax": [
+            "error",
+            {
+                "ignores": ["modules"]
+            }
+        ],
+        "@typescript-eslint/no-explicit-any": "warn",
+        "semi": ["warn", "never"]
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:node/recommended"
+    ],
+    "env": {
+        "node": true,
+        "es2020": true
+    },
+    "parser": "@typescript-eslint/parser",
+    "settings": {
+        "node": {
+            "tryExtensions": [".js", ".json", ".ts"]
+        }
+    }
+}

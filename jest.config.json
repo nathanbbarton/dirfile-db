@@ -1,0 +1,16 @@
+{
+    "preset": "ts-jest",
+    "testMatch": [
+        "**/tests/**/*.test.ts"
+    ],
+    "transform": {
+        "^.+\\.test\\.ts$": [
+            "ts-jest",
+            { "tsconfig": "tsconfig.test.json" }
+        ]
+    },
+    "moduleDirectories": [
+        "src",
+        "node_modules"
+    ]
+}
