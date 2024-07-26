@@ -1,25 +1,12 @@
 import { PathLike } from "fs"
 import { mkdir, writeFile, readFile, readdir, rm, unlink } from "fs/promises"
-import path from "path"
 import { randomUUID } from "crypto"
+import path from "path"
+import undefinedReplacer from "~/util/undefinedReplacer"
 
 interface DirfileDBConfig {
     rootDir?: string
 }
-
-/**
- * A replacer function meant for use with JSON.stringify(value, <replacer>, space)
- */
-type StringifyReplacer = (key: string, value: any) => any
-
-/**
- * Preserves undefined values by replacing them with null
- * @param _  unused key value
- * @param value object value to be compared
- * @returns {any} null if original value is undefined, otherwise orginal value
- */
-const undefinedReplacer: StringifyReplacer  =
-    (_, value) => value === undefined ? null : value
 
 /**
  * A directory/file-system NoSQL database.
@@ -40,7 +27,7 @@ class DirfileDB {
     }
 
     getRootDir() { return this.#rootDir }
-    getCollection(name: string) { return this.#collections.get(name)}
+    getCollection(name: string) { return this.#collections.get(name) }
 
     async init() {
         //create root dir for the DirDB
@@ -93,7 +80,7 @@ class DirfileDB {
             throw error
         }
     }
-    
+
     /**
      * READ Functions
      */
@@ -106,7 +93,7 @@ class DirfileDB {
         try {
             const collectionPath = this.#collections.get(collection)
             if (!collectionPath) throw new Error("Collection does not exist")
-    
+
             const files = await readdir(collectionPath)
 
             for (const file of files) {
@@ -132,13 +119,13 @@ class DirfileDB {
             if (!collectionPath) throw new Error("Collection does not exist")
 
             const files = await readdir(collectionPath)
-            const results = []
-        
+            const results: any[] = []
+
             for (const file of files) {
                 const filePath = path.join(collectionPath.toString(), file)
                 const fileContent = await readFile(filePath, "utf8")
                 const document = JSON.parse(fileContent)
-    
+
                 if (!query || Object.keys(query).every(key => document[key] === query[key])) {
                     results.push(document)
                 }

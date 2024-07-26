@@ -3,49 +3,61 @@
     "version": "0.0.1",
     "description": "A directory/file based data storage project",
     "type": "module",
-    "main": "dist/index.js",
-    "module": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [ "dist" ],
+    "main": "dist/cjs/index.cjs",
+    "module": "dist/esm/index.mjs",
+    "types": "dist/types/DirfileDB.d.ts",
+    "files": [
+        "dist"
+    ],
     "exports": {
-        ".": "./dist/index.js"
+        ".": {
+            "types": "./dist/types/DirfileDB.d.ts",
+            "require": "./dist/cjs/index.cjs",
+            "import": "./dist/esm/index.mjs",
+            "default": "./dist/esm/index.mjs"
+        },
+        "./package.json": "./package.json"
     },
     "scripts": {
-        "test": "rimraf testDB && jest --verbose",
-        "build": "webpack",
-        "lint": "eslint src/**/*.{js,ts} --format stylish",
-        "lint:fix": "eslint src/**/*.{js,ts} --format stylish --fix",
-        "clean": "rimraf dist defaultDB testDB",
+        "test": "rimraf testDB && jest --config=tests/jest.config.js --verbose",
+        "build": "npm-run-all -s clean:dist -p esbuild build:types",
+        "build:types": "tsc --project configs/tsconfig.types.json",
+        "esbuild": "node ./scripts/build.js",
+        "lint": "eslint src/**/*.ts --config configs/.eslintrc.json --format stylish",
+        "lint:fix": "eslint src/**/*.ts --format stylish --fix",
+        "clean": "npm-run-all clean:dist clean:dbs",
+        "clean:dist": "rimraf dist",
+        "clean:dbs": "rimraf defaultDB testDB",
         "reinstall": "rimraf node_modules && npm install",
-        "reset": "npm run clean && npm run reinstall"
+        "reset": "npm-run-all clean reinstall"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/nathanbbarton/dirfile-db.git"
     },
     "author": "Nathan Barton",
-    "license": "",
+    "license": "MIT",
     "bugs": {
         "url": "https://github.com/nathanbbarton/dirfile-db/issues"
     },
     "homepage": "https://github.com/nathanbbarton/dirfile-db#readme",
     "devDependencies": {
+        "@stylistic/eslint-plugin": "2.3.0",
         "@types/jest": "29.5.12",
         "@types/node": "20.12.12",
         "@typescript-eslint/eslint-plugin": "7.9.0",
         "@typescript-eslint/parser": "7.9.0",
+        "esbuild": "0.23.0",
         "eslint": "8.57.0",
-        "eslint-plugin-node": "11.1.0",
+        "eslint-import-resolver-typescript": "3.6.1",
+        "eslint-plugin-import": "2.29.1",
         "jest": "29.7.0",
+        "npm-run-all": "^4.1.5",
         "rimraf": "6.0.1",
         "ts-jest": "29.1.5",
-        "ts-loader": "9.5.1",
-        "tsconfig-paths-webpack-plugin": "4.1.0",
-        "typescript": "5.4.2",
-        "webpack": "5.91.0",
-        "webpack-cli": "5.1.4"
+        "typescript": "5.4.2"
     },
     "engines": {
-        "node": ">=20"
+        "node": ">=20.9.0"
     }
 }
