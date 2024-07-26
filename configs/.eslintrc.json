@@ -1,0 +1,39 @@
+{
+    "root": true,
+    "rules": {
+        "@stylistic/quotes": ["warn", "double", {
+                "avoidEscape": true,
+                "allowTemplateLiterals": true
+            }
+        ],
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@stylistic/semi": ["error", "never"],
+        "@stylistic/indent": ["error", 4],
+        "@stylistic/block-spacing": ["error", "always"],
+        "@stylistic/max-len": ["error", {
+            "code": 100,
+            "tabWidth": 4
+        }],
+        "@stylistic/no-trailing-spaces": "error"
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:import/recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint",
+        "import",
+        "@stylistic"
+    ],
+    "ignorePatterns": ["dist/**/*", "examples/**/*", "scripts/**/*"],
+    "settings": {
+        "import/parsers": {
+            "@typescript-eslint/parser": [".ts"]
+        },
+        "import/resolver": {
+            "typescript": {}
+        }
+    }
+}
