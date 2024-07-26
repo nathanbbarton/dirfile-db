@@ -1,8 +1,7 @@
 import DirfileDB from "../src/DirfileDB"
 import path from "path"
 import { readFile } from "node:fs/promises"
-// eslint-disable-next-line node/no-extraneous-import
-import { expect, test, describe } from "@jest/globals"
+import { expect, test, describe, beforeAll, afterEach } from "@jest/globals"
 
 describe("dir-db", () => {
 
@@ -327,7 +326,7 @@ describe("dir-db", () => {
     })
 
     describe("deleteAll", () => {
-        
+
         const deleteAllCollection = "deleteAll-test-collection"
 
         beforeAll(async () => {
