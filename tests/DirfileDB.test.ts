@@ -1,66 +1,109 @@
-import DirfileDB from "../src/DirfileDB"
+import DirfileDB, { DirfileDBMetadataFile, KeyValuePair } from "../src/DirfileDB.js"
 import path from "path"
+import assert from "node:assert"
 import { readFile } from "node:fs/promises"
-import { expect, test, describe, beforeAll, afterEach } from "@jest/globals"
+import { test } from "@kistools/test"
+import { PathLike, readFileSync } from "node:fs"
 
-describe("dir-db", () => {
+//directory to contain all test DirfileDB databases
+const rootTestDbsDir = "./testDBs/"
 
-    let testDB: DirfileDB
-    const testDbRootDir = "./testDB"
+//short form helper function
+const newDB = (rootDir: string) => new DirfileDB({ rootDir })
 
-    beforeAll(() => {
-        testDB = new DirfileDB({ rootDir: testDbRootDir })
-        testDB.init()
-    })
+const constructorDBDir = `${rootTestDbsDir}.constructorDB`
+test("constructor", {
+    subTests: [
+        test("creates new db dir", () => {
+            const testDB = newDB(constructorDBDir)
+            assert.equal(testDB.getRootDir(), constructorDBDir)
+        }),
 
-    describe("init", () => {
+        test("fails on invalid dir string", () => {
+            assert.throws(() => new DirfileDB({rootDir: " 11 1f248914f@#$%^&*'z  . . ."}))
+        }),
 
-        test("creates new db dir on success ", async () => {
-            expect(testDB.getRootDir()).toEqual(testDbRootDir)
+        test("should persist metadata when connecting to existing db", () => {
+            const testDB = newDB(constructorDBDir)
+            const newDBMetadata = testDB.getMetadata()
+
+            const reconnectDB = newDB(constructorDBDir)
+            const reconnectDBMetadata = reconnectDB.getMetadata()
+
+            assert.deepEqual(newDBMetadata, reconnectDBMetadata)
         })
+    ]
+})
 
-        test("fails on invalid dir string", async () => {
-            try {
-                const badDB = new DirfileDB({rootDir: " 11 1f248914f@#$%^&*'z  . . ."})
-                await badDB.init()
-            } catch (error) {
-                expect(error).toBeDefined()
-            }
-        })
-    })
-
-    describe("newCollection", () => {
-        const testCollection = "test-collection"
-
+const newCollectionDBDir = `${rootTestDbsDir}.newCollectionDB`
+test("newCollection", {
+    subTests: [
         test("successfully creates a new collection", async () => {
-            const collectionPath = await testDB.newCollection(testCollection)
+            const createNewCollection = "create-new-collection"
 
-            expect(collectionPath).toEqual(path.join(testDB.getRootDir(), testCollection))
-        })
+            const testDB = newDB(newCollectionDBDir)
+
+            const collectionPath = await testDB.newCollection(createNewCollection)
+    
+            assert.equal(
+                collectionPath,
+                path.join(testDB.getRootDir(), createNewCollection)
+            )
+        }),
+
+        test("creating a new collection should update in memory metadata", async () => {
+            const collectionInMemoryMetadata = "collection-in-memory-metadata"
+
+            const testDB = newDB(newCollectionDBDir)
+
+            await testDB.newCollection(collectionInMemoryMetadata)
+    
+            assert(testDB.getMetadata().collections.has(collectionInMemoryMetadata))
+        }),
+
+        test("creating a new collection should update metadata file", async () => {
+            const updateMetadataStr = "update-metadata-collection"
+
+            const testDB = newDB(newCollectionDBDir)
+            
+            await testDB.newCollection(updateMetadataStr)
+    
+            const metadataFilePath = path.resolve(newCollectionDBDir, DirfileDB.METADATA_FILENAME)
+            const rawMetadata = readFileSync(metadataFilePath, { encoding: "utf8" })
+            const metadataFile = JSON.parse(rawMetadata) as DirfileDBMetadataFile
+    
+            const containsCollection = metadataFile.collections.some(
+                (pair: KeyValuePair<string, PathLike>) => pair[0] === updateMetadataStr)
+    
+            assert(containsCollection)
+        }),
 
         test("doesn't overwrite existing collection", async () => {
             try {
-                await testDB.newCollection(testCollection)
-                await testDB.newCollection(testCollection)
+                const collectionStr = "existing-collection"
+    
+                const testDB = newDB(newCollectionDBDir)
+                await testDB.newCollection(collectionStr)  // Expect this to succeed
+                await testDB.newCollection(collectionStr)  // This should throw an error
+        
+                assert(false)  // This should never be reached
             } catch (error) {
-                expect(error).toBeDefined()
+                assert(true)  // Pass the test
             }
         })
+    ]
+})
 
-        afterEach(async () => {
-            testDB.deleteCollection(testCollection)
-        })
-    })
+const createDocumentDBDir = `${rootTestDbsDir}.createDocumentDB`
+const createCollection = "create-document-collection"
+test("create", {
+    subTests: [
+        test("successfully creates new document file in collection directory", async () => {
+            const testDB = newDB(createDocumentDBDir)
 
-    describe("create", () => {
-        const createCollection = "create-test-collection"
-
-        beforeAll(async () => {
             await testDB.newCollection(createCollection)
-        })
 
-        test("successfully creates new data file in collection", async () => {
-            const _id = "1238120"
+            const _id = "create-new-document-file"
             const testData = {
                 _id,
                 value: "test",
@@ -80,8 +123,8 @@ describe("dir-db", () => {
 
             const json = JSON.parse(file)
 
-            expect(JSON.stringify(testData)).toEqual(JSON.stringify(json))
-        })
+            assert.equal(JSON.stringify(testData), JSON.stringify(json))
+        }),
 
         test("preserve undefined as null when writing to collection", async () => {
             const _id = "ljkadfnasdklf"
@@ -97,6 +140,7 @@ describe("dir-db", () => {
                 empty: null
             }
 
+            const testDB = newDB(createDocumentDBDir)
             const collectionPath = testDB.getCollection(createCollection)
             await testDB.create(createCollection, testData)
 
@@ -106,33 +150,44 @@ describe("dir-db", () => {
             )
             const json = JSON.parse(file)
 
-            expect(JSON.stringify(json)).toEqual(JSON.stringify(expectedData))
+            assert.equal(JSON.stringify(json), JSON.stringify(expectedData))
+        }),
+
+        test("fails to create document when given non-existent collection", async () => {
+            try {
+                const testDB = newDB(createDocumentDBDir)
+
+                await testDB.create("non-existent-collection", { key: "value" })
+                assert(false)
+            } catch (error) {
+                assert(true) //expected failure
+            }
         })
-    })
+    ]
+})
 
-    describe("listCollections", () => {
-
+const listCollectionDBDir = `${rootTestDbsDir}.listCollectionDB`
+test("listCollections", {
+    subTests: [
         test("successfully lists all available collections", async () => {
-            const collection = "collection1"
+            const testDB = newDB(listCollectionDBDir)
+            const collection1 = "collection1"
             const collection2 = "collection2"
 
-            await testDB.newCollection(collection)
+            await testDB.newCollection(collection1)
             await testDB.newCollection(collection2)
 
-            const collections = testDB.listCollections()
+            const collections = new Set(testDB.listCollections())
 
-            expect(collections).toContain(collection)
-            expect(collections).toContain(collection2)
+            assert(collections.has(collection1) && collections.has(collection2))
         })
-    })
+    ]
+})
 
-    describe("find", () => {
-        const findCollection = "find-test-collection"
-
-        beforeAll(async () => {
-            await testDB.newCollection(findCollection)
-        })
-
+const findDBDir = `${rootTestDbsDir}.findDB`
+const findCollection = "find-collection"
+test("find", {
+    subTests: [
         test("successfully return a found document", async () => {
             const testData = {
                 _id: "findtestId",
@@ -142,11 +197,13 @@ describe("dir-db", () => {
                 object: { key: "value"},
             }
 
+            const testDB = newDB(findDBDir)
+            await testDB.newCollection(findCollection)
             await testDB.create(findCollection, testData)
             const document = await testDB.find(findCollection, { _id: "findtestId" })
 
-            expect(JSON.stringify(testData) === JSON.stringify(document)).toEqual(true)
-        })
+            assert.equal(JSON.stringify(testData), JSON.stringify(document))
+        }),
 
         test("returns only first found document", async () => {
 
@@ -167,23 +224,21 @@ describe("dir-db", () => {
                 object: { key: "stuff"},
             }
 
+            const testDB = newDB(findDBDir)
+            await testDB.newCollection(findCollection)
             await testDB.create(findCollection, testData)
             await testDB.create(findCollection, testData2)
             const document = await testDB.find(findCollection, { value: "test" })
 
-            expect(JSON.stringify(testData) === JSON.stringify(document)).toEqual(true)
+            assert.equal(JSON.stringify(testData), JSON.stringify(document))
         })
+    ]
+})
 
-    })
-
-    describe("findAll", () => {
-
-        const findAllCollection = "findAll-test-collection"
-
-        beforeAll(async () => {
-            await testDB.newCollection(findAllCollection)
-        })
-
+const findAllDBDir = `${rootTestDbsDir}.findAllDB`
+const findAllCollection = "find-all-collection"
+test("findAll", {
+    subTests: [
         test("returns all matching documents", async () => {
             const testData = {
                 _id: "id1",
@@ -202,23 +257,22 @@ describe("dir-db", () => {
                 object: { key: "stuff"},
             }
 
+            const testDB = newDB(findAllDBDir)
+            await testDB.newCollection(findAllCollection)
+
             await testDB.create(findAllCollection, testData)
             await testDB.create(findAllCollection, testData2)
             const documents = await testDB.findAll(findAllCollection, { thing2: 1 })
 
-            expect(documents.length).toEqual(2)
-
+            assert.equal(documents.length, 2)
         })
-    })
+    ]
+})
 
-    describe("update", () => {
-
-        const updateCollection = "update-test-collection"
-
-        beforeAll(async () => {
-            await testDB.newCollection(updateCollection)
-        })
-
+const updateDBDir = `${rootTestDbsDir}.updateDB`
+const updateCollection = "update-collection"
+test("update", {
+    subTests: [
         test("successfully appends data to a document", async () => {
             const _id = "add-to-existing-id"
             const testData = {
@@ -229,6 +283,8 @@ describe("dir-db", () => {
                 object: { key: "value"},
             }
 
+            const testDB = newDB(updateDBDir)
+            await testDB.newCollection(updateCollection)
             await testDB.create(updateCollection, testData)
             await testDB.update(
                 updateCollection,
@@ -236,8 +292,10 @@ describe("dir-db", () => {
             )
 
             const document = await testDB.find(updateCollection, { new: "data" })
-            expect(document).toBeDefined()
-        })
+
+            assert(document)
+            assert.equal(document.add, "add")
+        }),
 
         test("successfully updates existing data in a document", async () => {
             const _id = "update-existing-id"
@@ -249,6 +307,8 @@ describe("dir-db", () => {
                 object: { key: "value"},
             }
 
+            const testDB = newDB(updateDBDir)
+            await testDB.newCollection(updateCollection)
             await testDB.create(updateCollection, testData)
             await testDB.update(
                 updateCollection,
@@ -256,9 +316,9 @@ describe("dir-db", () => {
             )
 
             const document = await testDB.find(updateCollection, { _id })
-            expect(document).toBeDefined()
-            expect(document?.thing2).toEqual(5)
-        })
+            assert(document)
+            assert.equal(document.thing2, 5)
+        }),
 
         test("returns null if no document is found", async () => {
             const _id = "expect-null-id"
@@ -270,43 +330,43 @@ describe("dir-db", () => {
                 object: { key: "value"},
             }
 
+            const testDB = newDB(updateDBDir)
+            await testDB.newCollection(updateCollection)
             await testDB.create(updateCollection, testData)
-            await testDB.update(
-                updateCollection,
-                { _id, thing2: 5 }
-            )
 
             const document = await testDB.find(updateCollection, { _id: "invalid _id" })
-            expect(document).toBeNull()
+            assert(!document)
         })
-    })
+    ]
+})
 
-    describe("deleteCollection", () => {
-
+const deleteCollectionDBDir = `${rootTestDbsDir}.deleteCollectionDB`
+test("deleteCollection", {
+    subTests: [
         test("successfully removes existing collection", async () => {
             const collection = "deleteCollection"
             const collection2 = "deleteCollection2"
+
+            const testDB = newDB(deleteCollectionDBDir)
 
             await testDB.newCollection(collection)
             await testDB.newCollection(collection2)
 
             await testDB.deleteCollection(collection)
 
-            const collections = testDB.listCollections()
+            const collections = new Set(testDB.listCollections())
 
-            expect(collections).toContain(collection2)
-            expect(collections).not.toContain(collection)
+            assert(!collections.has(collection))
+            assert(collections.has(collection2))
         })
-    })
+    ]
+})
 
-    describe("delete", () => {
 
-        const deleteCollection = "delete-test-collection"
-
-        beforeAll(async () => {
-            await testDB.newCollection(deleteCollection)
-        })
-
+const deleteDBDir = `${rootTestDbsDir}.deleteDB`
+const deleteCollection = "delete-collection"
+test("delete", {
+    subTests: [
         test("successfully deletes first document that matches query", async () => {
             const testData = {
                 value: "test",
@@ -315,24 +375,23 @@ describe("dir-db", () => {
                 array: ["item"],
                 object: { key: "value" },
             }
+            const testDB = newDB(deleteDBDir)
+            await testDB.newCollection(deleteCollection)
 
             await testDB.create(deleteCollection, testData)
             await testDB.delete(deleteCollection, { value: "test" })
 
             const document = await testDB.find(deleteCollection, { value: "test" })
-            expect(document).toBeNull()
+            assert(!document)
         })
+    ]
+})
 
-    })
 
-    describe("deleteAll", () => {
-
-        const deleteAllCollection = "deleteAll-test-collection"
-
-        beforeAll(async () => {
-            await testDB.newCollection(deleteAllCollection)
-        })
-
+const deleteAllDBDir = `${rootTestDbsDir}.deleteAllDB`
+const deleteAllCollection = "delete-all-collection"
+test("deleteAll", {
+    subTests: [
         test("successfully deletes all matching documents", async () => {
 
             const testData = {
@@ -343,19 +402,17 @@ describe("dir-db", () => {
                 object: { key: "value" },
             }
 
-            await testDB.create(deleteAllCollection, testData)
-            await testDB.create(deleteAllCollection, testData)
-            await testDB.create(deleteAllCollection, testData)
+            const testDB = newDB(deleteAllDBDir)
+            await testDB.newCollection(deleteAllCollection)
 
-            let documents = await testDB.findAll(deleteAllCollection)
-
-            expect(documents.length).toEqual(3)
+            await testDB.create(deleteAllCollection, testData)
+            await testDB.create(deleteAllCollection, testData)
+            await testDB.create(deleteAllCollection, testData)
 
             await testDB.deleteAll(deleteAllCollection, { value: "test" })
 
-            documents = await testDB.findAll(deleteAllCollection)
-            expect(documents.length).toEqual(0)
+            const documents = await testDB.findAll(deleteAllCollection)
+            assert.equal(documents.length, 0)
         })
-    })
-
+    ]
 })

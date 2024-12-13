@@ -4,5 +4,10 @@
         "outDir": "../dist/types",
         "declaration": true,
         "emitDeclarationOnly": true
-    }
+    },
+    "exclude": [
+        "../node_modules",
+        "../dist",
+        "../tests"
+    ]
 }

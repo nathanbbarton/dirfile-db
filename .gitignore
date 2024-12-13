@@ -1,6 +1,7 @@
 # Custom project ignores
 defaultDB
 testDB
+testDBs
 
 # Logs
 logs
