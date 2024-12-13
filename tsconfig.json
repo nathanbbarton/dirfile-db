@@ -1,20 +1,22 @@
 {
     "compilerOptions": {
-        "target": "ES2022",
-        "lib": ["dom", "ES2020", "esnext.asynciterable"], // Libs to include
+        "target": "ESNext",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "lib": ["dom"], // Libs to include
         "strict": true, // Enable all strict type-checking options
         "esModuleInterop": true, // Enables emit interoperability between CommonJS and ES Modules
         "allowSyntheticDefaultImports": true,
         "skipLibCheck": true, // Skip type checking of all declaration files
         "forceConsistentCasingInFileNames": true, // Ensure case sensitivity
+        "resolveJsonModule": true,
         "baseUrl": ".",
+        "outDir": "dist",
         "paths": {
-            "~/*": ["src/*"],
-            "*": ["*", "*.ts", "*.js"]
+            "~/*": ["src/*"]
         },
-        "rootDir": "./src",
         "types": ["node"],
     },
-    "include": ["./src/**/*"], // Include all files in src
-    "exclude": ["./node_modules", "./dist", "./tests"] // Exclude directories
+    "include": ["src/**/*", "tests/**/*", "kist"], // Include all files in src
+    "exclude": ["node_modules", "dist"] // Exclude directories
 }
