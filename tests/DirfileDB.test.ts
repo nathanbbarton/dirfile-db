@@ -20,7 +20,8 @@ test("constructor", {
         }),
 
         test("fails on invalid dir string", () => {
-            assert.throws(() => new DirfileDB({rootDir: " 11 1f248914f@#$%^&*'z  . . ."}))
+            const invalidStr = "CON:/" //invalid directory string for Windows and Linux/Unix
+            assert.throws(() => new DirfileDB({rootDir: invalidStr})) 
         }),
 
         test("should persist metadata when connecting to existing db", () => {
