@@ -6,7 +6,7 @@ const sharedOptions = {
     bundle: true,
     platform: "node",
     external: ["fs", "fs/promises", "path", "crypto"],
-    tsconfig: path.resolve("./tsconfig.json")
+    tsconfig: path.resolve("./configs/tsconfig.build.json")
 }
 
 const cjsOptions = {
