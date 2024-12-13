@@ -20,7 +20,7 @@ test("constructor", {
         }),
 
         test("fails on invalid dir string", () => {
-            const invalidStr = "CON:/" //invalid directory string for Windows and Linux/Unix
+            const invalidStr = "CON:*?|/" // Invalid on both Windows and Linux
             assert.throws(() => new DirfileDB({rootDir: invalidStr})) 
         }),
 

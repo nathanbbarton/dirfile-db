@@ -1,44 +1,17 @@
-name: dirfile-db CI
+name: Test Workflow
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-
-    - name: Install dependencies
-      run: npm install
-
-    - name: Lint code
-      run: npm run lint
-
-    - name: Run tests
-      run: npm test
-
   publish:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-
-    if: github.event_name == 'push'
-
+        
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -60,4 +33,3 @@ jobs:
       run: npm publish --provenance --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
