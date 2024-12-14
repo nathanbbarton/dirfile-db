@@ -1,0 +1,13 @@
+name: dirfile-db CI - Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  call-test:
+    uses: ./.github/workflows/test.yml  # Reuse the test job
+
+  call-publish:
+    uses: ./.github/workflows/publish.yml  # Reuse the test job
